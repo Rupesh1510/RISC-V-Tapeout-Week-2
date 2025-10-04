@@ -130,7 +130,7 @@ This section walks through the complete modeling process, adjusting digital outp
     ```
     Focus on the `CLK` (provided by the PLL) and `OUT` (output of the DAC model). An example result of the process:
 
-    ![pre_synth_sim](images/pre_synth_sim.png)
+    <img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/34aa7fb2-6862-4e60-8af7-5ef838b2814b" />
 
 Key signals seen here include:
 
@@ -144,6 +144,6 @@ Key signals seen here include:
 
 
 
-<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/34aa7fb2-6862-4e60-8af7-5ef838b2814b" />
+
 
 
