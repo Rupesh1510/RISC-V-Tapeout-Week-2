@@ -48,3 +48,102 @@ For VSDBabySoC, functional modelling validates the correct integration of the RV
 
 This approach ensures strong conceptual foundations, making VSDBabySoC an ideal platform for students and engineers beginning their SoC design journey.
 
+
+---
+
+# Introduction to the VSDBabySoC
+
+The VSDBabySoC is a compact yet highly capable SoC based on the RISC-V architecture. Its primary objective is to serve as a test platform that brings together three open-source IP cores for the first time while enabling calibration of its analog components. VSDBabySoC integrates an RVMYTH microprocessor, an 8x phase-locked loop (PLL) for stable clock generation, and a 10-bit digital-to-analog converter (DAC) for interaction with analog devices.
+
+![vsdbabysoc_block_diagram](images/vsdbabysoc_block_diagram.png)
+
+## Problem Statement
+
+This project explores different facets involved in designing a minimal SoC centered around the RVMYTH processor (a RISC-V core). The SoC utilizes a PLL for its clock subsystem and a 10-bit DAC for external I/O. Analog-aware devices such as TVs or phones can process DAC outputs to offer users audio or video content. By leveraging open-source IPs and Sky130 fabrication, the VSDBabySoC is suitable for academic and educational applications.
+
+
+## What is RVMYTH?
+
+RVMYTH is a straightforward RISC-V-based CPU, created as part of a collaborative workshop led by RedwoodEDA and VSD. Over five days, participants—including students at the middle-school level—built a working processor from the ground up using TL-Verilog (TLV) for rapid iteration. The design and all future enhancements are licensed openly, contributed by students.
+
+## What is a PLL?
+
+A phase-locked loop (PLL) is a feedback-controlled system that generates an output signal whose phase follows that of an input reference. PLLs see widespread use for phase synchronization, frequency synthesis, and clock distribution.
+
+## What is a DAC?
+
+A digital-to-analog converter (DAC) transforms digital data into corresponding analog signals. DACs are integral to communications, enabling generation of analog output from digital systems. High-speed DACs support mobile networks and optical communications.
+
+# Modeling the VSDBabySoC
+
+This section details the simulation workflow, using `iverilog` for digital modeling and `gtkwave` for waveform visualization. Initial input stimuli trigger the PLL within the `vsdbabysoc` module, which begins clocking the `rvmyth` core. The processor executes programs stored in instruction memory, filling register `r17` with sample values each cycle. These values feed the DAC to generate the final analog output (`OUT`). The SoC wraps three main IP cores, with an accompanying testbench for evaluation.
+
+> **Note:** Referenced repositories for modeling are listed below for completeness; the main source files reside in the [Source-Code Directory](src), with module implementations in the [Modules Sub-Directory](src/module).
+
+## RVMYTH Modeling
+
+As explained above, RVMYTH is implemented in TL-Verilog; to leverage it in our Verilog-based SoC, we must first transpile it with a tool like `sandpiper-saas`.
+
+Reference: [RVMYTH core modeling repo](https://github.com/shivanishah269/risc-v-core)
+
+## PLL and DAC Modeling
+
+Native analog synthesis in Verilog remains unsupported; however, simulation is possible with the `real` data type. The following repositories provided the design basis for the PLL and DAC:
+
+1. [PLL modeling reference](https://github.com/vsdip/rvmyth_avsdpll_interface)
+2. [DAC modeling reference](https://github.com/vsdip/rvmyth_avsddac_interface)
+
+> **Caution:** Early in development, the Verilog PLL model was sourced from [here](https://github.com/vsdip/rvmyth_avsdpll_interface). As the design advanced to physical implementation, some changes were made to yield a new variant (`AVSDPLL`), based on [this IP](https://github.com/lakshmi-sathi/avsdpll_1v8).
+
+## Step-by-Step Modeling Guide
+
+This section walks through the complete modeling process, adjusting digital output stimuli to observe their effect at the DAC. Commands are tested on Ubuntu Bionic (18.04.5); other systems may need adjustments.
+
+1. Install required packages:
+
+    ```
+    sudo apt install make python python3 python3-pip git iverilog gtkwave docker.io
+    sudo chmod 666 /var/run/docker.sock
+    cd ~
+    pip3 install pyyaml click sandpiper-saas
+    ```
+
+2. Clone the project repository (example uses home directory):
+
+    ```
+    cd ~
+    git clone https://github.com/manili/VSDBabySoC.git
+    ```
+
+3. Generate the pre-synthesis simulation file:
+
+    ```
+    cd VSDBabySoC
+    make pre_synth_sim
+    ```
+    The simulation output (`pre_synth_sim.vcd`) is saved to `output/pre_synth_sim`.
+
+4. Visualize the signal waveforms:
+
+    ```
+    gtkwave output/pre_synth_sim/pre_synth_sim.vcd
+    ```
+    Focus on the `CLK` (provided by the PLL) and `OUT` (output of the DAC model). An example result of the process:
+
+    ![pre_synth_sim](images/pre_synth_sim.png)
+
+Key signals seen here include:
+
+- **CLK:** The input clock to the RVMYTH core, originating from the PLL.
+- **reset:** The RVMYTH core’s reset input, typically driven externally.
+- **OUT:** The VSDBabySoC’s output, produced by the DAC (modeled digitally due to simulation limitations).
+- **RV_TO_DAC[9:0]:** The 10-bit output bus from RVMYTH register #17.
+- **OUT (real):** An analog-typed output wire from the DAC, representing actual analog behavior in simulation.
+
+> **Note:** The synthesis flow cannot support `real` type signals. Thus, the `vsdbabysoc.OUT` must be a regular `wire`, which tools like `iverilog` treat as digital only. Therefore, analog output is best observed using the `dac.OUT` (of type `real`) within simulation results.
+
+
+
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/34aa7fb2-6862-4e60-8af7-5ef838b2814b" />
+
+
